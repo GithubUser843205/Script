@@ -3,7 +3,6 @@ from Crypto.Cipher import AES
 import base64
 import string
 import os
-import sys
 
 def is_mostly_printable(text: str, threshold: float = 0.9) -> bool:
     if not text:
@@ -57,7 +56,6 @@ def main():
         print("Decoded data too short (must contain IV + ciphertext). Exiting.")
         return
 
-    # Prepare output collection
     found = []  # list of tuples (candidate_key, plaintext)
     total_tried = 0
 
@@ -74,7 +72,7 @@ def main():
     try:
         with open(wordlist_path, 'r', encoding='utf-8', errors='ignore') as f:
             for idx, raw_line in enumerate(f, 1):
-                candidate = raw_line.rstrip("\n\r")  # keep leading/trailing spaces if they exist in the wordlist
+                candidate = raw_line.rstrip("\n\r")
                 if not candidate:
                     continue
                 total_tried += 1
@@ -85,7 +83,7 @@ def main():
                     print("Decrypted plaintext:")
                     print(result)
                     found.append((candidate, result))
-                    # continue searching — we want all valid keys
+                    # continue searching — collect all valid keys
 
                 # optional progress print
                 if total_tried % 1000 == 0:
@@ -102,14 +100,12 @@ def main():
 
     # Report results
     if found:
-        print("\n Completed. Valid keys found:")
-        with open("found_keys.txt", "w", encoding="utf-8") as out:
-            for i, (k, p) in enumerate(found, 1):
-                print(f"\n{i}) Key: {k}\nPlaintext:\n{p}\n{'-'*40}")
-                out.write(f"Key: {k}\nPlaintext:\n{p}\n{'-'*40}\n")
-        print("\nAll found keys + plaintexts have been saved to found_keys.txt")
+        print("\n✅ Completed. Valid keys found:")
+        for i, (k, p) in enumerate(found, 1):
+            print(f"\n{i}) Key: {k}\nPlaintext:\n{p}\n{'-'*40}")
     else:
-        print("\n Completed. No valid keys found in the provided wordlist.")
+        print("\n❌ Completed. No valid keys found in the provided wordlist.")
+
     print(f"Total keys tried: {total_tried}")
 
 if __name__ == "__main__":
