@@ -56,18 +56,8 @@ def main():
         print("Decoded data too short (must contain IV + ciphertext). Exiting.")
         return
 
-    found = []  # list of tuples (candidate_key, plaintext)
+    found = []
     total_tried = 0
-
-    # Count lines (best-effort) for progress display
-    total_lines = None
-    try:
-        with open(wordlist_path, 'r', encoding='utf-8', errors='ignore') as f:
-            total_lines = sum(1 for _ in f)
-    except Exception:
-        total_lines = None
-
-    print(f"Trying keys from {wordlist_path} (total ~ {total_lines if total_lines is not None else 'unknown'}) ...")
 
     try:
         with open(wordlist_path, 'r', encoding='utf-8', errors='ignore') as f:
@@ -83,28 +73,20 @@ def main():
                     print("Decrypted plaintext:")
                     print(result)
                     found.append((candidate, result))
-                    # continue searching — collect all valid keys
-
-                # optional progress print
-                if total_tried % 1000 == 0:
-                    if total_lines:
-                        print(f"  Tried {total_tried}/{total_lines} keys...")
-                    else:
-                        print(f"  Tried {total_tried} keys...")
+                    # continue checking for multiple hits
 
     except KeyboardInterrupt:
-        print("\nInterrupted by user — will report what was found so far.")
+        print("\nInterrupted by user — reporting results found so far.")
     except Exception as e:
         print("Error while reading wordlist:", e)
         return
 
-    # Report results
     if found:
-        print("\n✅ Completed. Valid keys found:")
+        print("\nCompleted. Valid keys found:")
         for i, (k, p) in enumerate(found, 1):
             print(f"\n{i}) Key: {k}\nPlaintext:\n{p}\n{'-'*40}")
     else:
-        print("\n❌ Completed. No valid keys found in the provided wordlist.")
+        print("\nCompleted. No valid keys found in the provided wordlist.")
 
     print(f"Total keys tried: {total_tried}")
 
