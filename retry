@@ -1,0 +1,32 @@
+(() => {
+  const open = XMLHttpRequest.prototype.open;
+  const send = XMLHttpRequest.prototype.send;
+
+  XMLHttpRequest.prototype.open = function(m, u) {
+    this._m = m;
+    this._u = u;
+    open.apply(this, arguments);
+  };
+
+  XMLHttpRequest.prototype.send = function(body) {
+    this.addEventListener("load", () => {
+      if (this.status !== 500) return;
+
+      const retry = () => {
+        const x = new XMLHttpRequest();
+        x.open(this._m, this._u, true);
+        x.onload = () => {
+          if (x.status === 500) {
+            console.log("500, retrying...");
+            retry();
+          }
+        };
+        x.send(body);
+      };
+
+      retry();
+    });
+
+    send.call(this, body);
+  };
+})();
