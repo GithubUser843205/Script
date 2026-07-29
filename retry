@@ -1,4 +1,6 @@
 (() => {
+  const TARGET = "https://grc.ey.net/ArcherGISSearch/default.aspx";
+
   const open = XMLHttpRequest.prototype.open;
   const send = XMLHttpRequest.prototype.send;
 
@@ -10,17 +12,24 @@
 
   XMLHttpRequest.prototype.send = function(body) {
     this.addEventListener("load", () => {
-      if (this.status !== 500) return;
+      if (
+        this.status !== 500 ||
+        !this._u.startsWith(TARGET)
+      ) {
+        return;
+      }
 
       const retry = () => {
         const x = new XMLHttpRequest();
         x.open(this._m, this._u, true);
+
         x.onload = () => {
           if (x.status === 500) {
             console.log("500, retrying...");
             retry();
           }
         };
+
         x.send(body);
       };
 
