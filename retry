@@ -1,41 +1,64 @@
 (() => {
-  const TARGET = "https://grc.ey.net/ArcherGISSearch/default.aspx";
+    const TARGET_PATH = "/ArcherGISSearch/default.aspx";
 
-  const open = XMLHttpRequest.prototype.open;
-  const send = XMLHttpRequest.prototype.send;
+    const originalOpen = XMLHttpRequest.prototype.open;
+    const originalSend = XMLHttpRequest.prototype.send;
 
-  XMLHttpRequest.prototype.open = function(m, u) {
-    this._m = m;
-    this._u = u;
-    open.apply(this, arguments);
-  };
+    XMLHttpRequest.prototype.open = function(method, url) {
+        this.__method = method;
+        this.__url = url;
+        return originalOpen.apply(this, arguments);
+    };
 
-  XMLHttpRequest.prototype.send = function(body) {
-    this.addEventListener("load", () => {
-      if (
-        this.status !== 500 ||
-        !this._u.startsWith(TARGET)
-      ) {
-        return;
-      }
+    XMLHttpRequest.prototype.send = function(body) {
+        this.addEventListener("readystatechange", () => {
+            if (this.readyState !== 4) return;
 
-      const retry = () => {
-        const x = new XMLHttpRequest();
-        x.open(this._m, this._u, true);
+            const url = new URL(this.__url, location.href);
 
-        x.onload = () => {
-          if (x.status === 500) {
-            console.log("500, retrying...");
+            console.log(
+                "[XHR]",
+                this.status,
+                url.href
+            );
+
+            if (
+                this.status !== 500 ||
+                url.pathname !== TARGET_PATH
+            ) {
+                return;
+            }
+
+            console.log("[XHR] 500 detected, retrying...");
+
+            const retry = () => {
+                const xhr = new XMLHttpRequest();
+
+                xhr.open(this.__method, url.href, true);
+
+                xhr.onreadystatechange = () => {
+                    if (xhr.readyState !== 4) return;
+
+                    console.log(
+                        "[Retry]",
+                        xhr.status,
+                        url.href
+                    );
+
+                    if (xhr.status === 500) {
+                        console.log("[Retry] 500, trying again...");
+                        retry();
+                    }
+                };
+
+                xhr.send(body);
+            };
+
             retry();
-          }
-        };
+        });
 
-        x.send(body);
-      };
+        return originalSend.call(this, body);
+    };
 
-      retry();
-    });
-
-    send.call(this, body);
-  };
+    console.log("XHR retry patch installed");
 })();
